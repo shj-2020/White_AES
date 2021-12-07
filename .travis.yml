@@ -1,0 +1,147 @@
+# see http://about.travis-ci.org/docs/user/languages/cpp/ for more hints
+language: cpp
+
+# Use container based infrastructure for Travis
+sudo: false
+dist: bionic
+
+cache:
+  directories:
+  - $HOME/ntl
+
+# Coverity
+env:
+  global:
+   # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
+   #   via the "travis encrypt" command using the project repo's public key
+   - secure: "GjngtCbY8kqx9z5Aq9miC94Ya6siaEDJd0kKnUm5wsXvyvDBsBoNdWgE9tPk3KAtbavp5BPbMfZhAfDq0L68cDwDYwkO4l47Q4BDC5xRXHfT88TVOJMj+0QCYPtsvXwDGbQVYtPIfaNqnbYs92LZtZnlIXwkPu9Upf09apY1u6JJFfbziGuRnkV27JV9P9KanLg28m5666+33OoFK7wIzTFXE2bwX7Um9pyx1j2i376ULvTexZ21Y6NJL2z0hv+DKQfFRLA1Hf80FtkcPgssGhlQpPMCPuxDgt3MLaGkunfGRijJFOYlzyWwjlwv7rodai1oFYGJACDTRLDgEWHUGZ5X0m4hW7yYwkjYMgZEZeL78AnvIjHQSc6sdyqEy39rwWc3Celi26ut1xwm9Qbi6WAZxMqsHT4nE6sry1H5j+Y942xBL0i62Xn7iuPo6kbZN2ehZS3JeAn7BmoV0i533cUaKyDFUe/mmkKF+GETTdNYzlQnxZoxDWwjdFWRHXTxYh2C/J7sAC4RJ5Bo4L6/bEwSgjvqHdKNTWce5Y4c+h+UL80ZWr4QM4MrpI/hELqUSMlcFhq6i7Hep0gr3za7GEKf3oL+jmQa+Ip5GnWcX9F9rBAMbLQhMY4fSOBDOTvyaSa9UdpUbzNACBFf1G9tjvMQReObuL/IbowBy1zTcjA="
+
+# https://docs.travis-ci.com/user/migrating-from-legacy
+addons:
+  apt:
+    sources:
+    - ubuntu-toolchain-r-test
+    - boost-latest
+    packages:
+    - build-essential
+    - autoconf
+    - cmake
+    - cmake-data
+    - libboost-program-options1.58-dev
+    - libboost-serialization1.58-dev
+    - libboost-iostreams1.58-dev
+    - libboost-random1.58-dev
+  coverity_scan:
+      project:
+        name: "ph4r05/Whitebox-crypto-AES"
+        description: "AES Whitebox implementation"
+      notification_email: ph4r05@gmail.com
+      build_command_prepend: bash install-ntl-cached.sh
+      build_command:   bash build.sh
+      branch_pattern: coverity_scan
+
+matrix:
+  include:
+    # works on Precise and Trusty
+    - os: linux
+      dist: xenial
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - boost-latest
+          packages:
+            - g++-4.9
+            - build-essential
+            - autoconf
+            - cmake
+            - cmake-data
+            - libboost-program-options1.58-dev
+            - libboost-serialization1.58-dev
+            - libboost-iostreams1.58-dev
+            - libboost-random1.58-dev
+      env:
+         - MATRIX_EVAL="CC=gcc-4.9 && CXX=g++-4.9"
+
+    # works on Precise and Trusty
+    - os: linux
+      dist: xenial
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - boost-latest
+          packages:
+            - g++-7
+            - build-essential
+            - autoconf
+            - cmake
+            - cmake-data
+            - libboost-program-options1.58-dev
+            - libboost-serialization1.58-dev
+            - libboost-iostreams1.58-dev
+            - libboost-random1.58-dev
+      env:
+        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
+
+    # works on Precise and Trusty
+    - os: linux
+      dist: xenial
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-precise-3.6
+            - boost-latest
+          packages:
+            - clang-3.6
+            - build-essential
+            - autoconf
+            - cmake
+            - cmake-data
+            - libboost-program-options1.58-dev
+            - libboost-serialization1.58-dev
+            - libboost-iostreams1.58-dev
+            - libboost-random1.58-dev
+      env:
+        - MATRIX_EVAL="CC=clang-3.6 && CXX=clang++-3.6"
+
+    # works on Trusty
+    - os: linux
+      dist: xenial
+      addons:
+        apt:
+          sources:
+            - llvm-toolchain-xenial-6.0
+            - boost-latest
+          packages:
+            - clang-6.0
+            - build-essential
+            - autoconf
+            - cmake
+            - cmake-data
+            - libboost-program-options1.58-dev
+            - libboost-serialization1.58-dev
+            - libboost-iostreams1.58-dev
+            - libboost-random1.58-dev
+      env:
+        - MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0"
+
+before_install:
+    - eval "${MATRIX_EVAL}"
+
+before_install:
+  - echo $LANG
+  - echo $LC_ALL
+  - bash install-ntl-cached.sh
+
+script:
+  - ls -las
+  - ls -las $HOME/ntl
+  - bash build.sh
+  - ls -las
+  - ./gtesting
+  - ./main --create-table /tmp/aes-table --extEnc=0
+  - ./main --load-tables /tmp/aes-table --extEnc=0 --input-files /tmp/aes-table --pkcs5=1 --cbc=1 -o /tmp/aes-table.enc
+  - ./main --load-tables /tmp/aes-table --extEnc=0 --input-files /tmp/aes-table.enc --pkcs5=1 --cbc=1 -o /tmp/aes-table.dec --decrypt=1
+  - diff /tmp/aes-table /tmp/aes-table.dec
